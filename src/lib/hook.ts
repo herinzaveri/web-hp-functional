@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 /**
  * Gets bounding boxes for an element. This is implemented for you
  */
@@ -21,14 +23,25 @@ export function getElementBounds(elem: HTMLElement) {
  */
 export function isPointInsideElement(
   coordinate: { x: number; y: number },
-  element: HTMLElement
-): boolean {}
+  element: HTMLElement,
+): boolean {
+  const { x, y } = coordinate;
+  const { top, left, width, height } = getElementBounds(element);
+
+  if (x >= left && x <= left + width && y >= top && y <= top + height) {
+    return true;
+  }
+
+  return false;
+}
 
 /**
  * **TBD:** Implement a function that returns the height of the first line of text in an element
  * We will later use this to size the HTML element that contains the hover player
  */
-export function getLineHeightOfFirstLine(element: HTMLElement): number {}
+export function getLineHeightOfFirstLine(element: HTMLElement): number {
+  return +element.style.lineHeight;
+}
 
 export type HoveredElementInfo = {
   element: HTMLElement;
@@ -44,5 +57,29 @@ export type HoveredElementInfo = {
  * Note: If using global event listeners, attach them window instead of document to ensure tests pass
  */
 export function useHoveredParagraphCoordinate(
-  parsedElements: HTMLElement[]
-): HoveredElementInfo | null {}
+  parsedElements: HTMLElement[],
+): HoveredElementInfo | null {
+  const [hoveredElementInfo, setHoveredElementInfo] =
+    useState<HoveredElementInfo | null>(null);
+
+  parsedElements.forEach((parsedElement) => {
+    const elementBounds = getElementBounds(parsedElement);
+
+    const elementInfo = {
+      element: parsedElement,
+      top: elementBounds.top,
+      left: elementBounds.left,
+      heightOfFirstLine: getLineHeightOfFirstLine(parsedElement),
+    };
+
+    parsedElement.addEventListener("mouseout", (e) => {
+      setHoveredElementInfo(null);
+    });
+
+    parsedElement.addEventListener("mouseover", (e) => {
+      setHoveredElementInfo(elementInfo);
+    });
+  });
+
+  return hoveredElementInfo;
+}
