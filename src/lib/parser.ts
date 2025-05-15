@@ -44,4 +44,54 @@ const IGNORE_LIST = [
  *            </body>;
  *            In this case, #content-1 should not be considered as a top level readable element.
  */
-export function getTopLevelReadableElementsOnPage(): HTMLElement[] {}
+function hasNonEmptyText(element: HTMLElement): boolean {
+  return !!element.textContent && element.textContent.trim().length > 0;
+}
+
+function isIgnoredTag(tag: string): boolean {
+  return IGNORE_LIST.includes(tag.toUpperCase());
+}
+
+function isSingleChildChain(element: HTMLElement): boolean {
+  let current = element;
+  while (current.parentElement && current.parentElement.children.length === 1) {
+    current = current.parentElement;
+  }
+  return current !== element;
+}
+
+function containsAnotherTopLevelCandidate(
+  elem: HTMLElement,
+  candidates: Set<HTMLElement>,
+): boolean {
+  for (const candidate of candidates) {
+    if (candidate !== elem && elem.contains(candidate)) return true;
+  }
+  return false;
+}
+
+export function getTopLevelReadableElementsOnPage(): HTMLElement[] {
+  const allElements = Array.from(
+    document.body.getElementsByTagName("*"),
+  ) as HTMLElement[];
+
+  const candidates = new Set<HTMLElement>();
+
+  for (const elem of allElements) {
+    if (!hasNonEmptyText(elem)) continue;
+    if (isIgnoredTag(elem.tagName)) continue;
+    if (isSingleChildChain(elem)) continue;
+
+    candidates.add(elem);
+  }
+
+  // Remove any elements that are ancestors of other top-level candidates
+  const finalCandidates: HTMLElement[] = [];
+  for (const elem of candidates) {
+    if (!containsAnotherTopLevelCandidate(elem, candidates)) {
+      finalCandidates.push(elem);
+    }
+  }
+
+  return finalCandidates;
+}

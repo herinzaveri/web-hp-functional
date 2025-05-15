@@ -1,3 +1,8 @@
+import { useEffect, useState } from "react";
+import { speechify } from "./play";
+import { getTopLevelReadableElementsOnPage } from "./parser";
+import { useHoveredParagraphCoordinate } from "./hook";
+
 // This is a simple play button SVG that you can use in your hover player
 const PlayButton = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -27,4 +32,41 @@ const PlayButton = (props: React.SVGProps<SVGSVGElement>) => (
  * The hover player should contain a play button that when clicked, should play the text of the paragraph
  * This component should make use of the useHoveredParagraphCoordinate hook to get information about the hovered paragraph
  */
-export default function HoverPlayer() {}
+export default function HoverPlayer() {
+  const [elements, setElements] = useState<HTMLElement[]>([]);
+  
+  useEffect(() => {
+    // On mount or when content changes, get readable elements
+    const topLevelElements = getTopLevelReadableElementsOnPage();
+    setElements(topLevelElements);
+  }, []);
+
+  // Use your custom hook to get hovered element info
+  const hoveredInfo = useHoveredParagraphCoordinate(elements);
+
+  if (!hoveredInfo) {
+    return null; // Don't render anything if there's no hovered element
+  }
+
+  const { top, left, element } = hoveredInfo;
+
+  // Position hover player just at first line of the element
+  const style: React.CSSProperties = {
+    position: "absolute",
+    top: top + window.scrollY,
+    left: left + window.scrollX,
+    zIndex: 1000,
+    pointerEvents: "auto", // to allow clicking the button
+  };
+
+  // Function to play text of the paragraph (element)
+  const handlePlayClick = () => {
+    speechify(element)
+  };
+
+  return (
+    <div style={style} aria-label="Hover Player">
+      <PlayButton onClick={handlePlayClick} />
+    </div>
+  );
+}
